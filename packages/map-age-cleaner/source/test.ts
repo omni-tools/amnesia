@@ -167,3 +167,22 @@ test('cleanup items which have same expiration timestamp', async t => {
 
 	t.is(map.size, 0);
 });
+
+test('clean the map before expiration', async t => {
+	const map = new Map([
+		['unicorn', {maxAge: Date.now() + 1000, data: '🦄'}],
+		['rainbow', {maxAge: Date.now() + 1000, data: '🌈'}]
+	]);
+	mapAgeCleaner(map);
+
+	map.clear();
+	t.is(map.size, 0);
+});
+
+test('Insert of an outdated item', async t => {
+	const map = new Map();
+	mapAgeCleaner(map);
+	map.set('old-unicorn', {maxAge: Date.now() - 1234, data: '🦄'});
+
+	t.is(map.size, 0);
+});

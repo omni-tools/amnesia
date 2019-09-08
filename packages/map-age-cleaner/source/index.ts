@@ -73,16 +73,6 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 		return itemProcessingDeferred.promise;
 	};
 
-	const cleanup = async () => {
-		try {
-			for (const entry of map) {
-				await setupTimer(entry); // FIXME: catch here
-			}
-		} catch {
-			// Do nothing if an error occurs, this means the timer was cleaned up and we should stop processing
-		}
-	};
-
 	const originalSet = map.set.bind(map);
 	const originalClear = map.clear.bind(map);
 
@@ -106,9 +96,9 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 		timerMap.clear();
 		return originalClear();
 	}
-
-	cleanup();				// tslint:disable-line:no-floating-promises
-	// ! instead set up timer targetly / ?
+	for (const entry of map) {
+		setupTimer(entry).catch(() => {});
+	}
 
 	return map;
 }
