@@ -30,78 +30,61 @@ export default function mapAgeCleaner<K = any, V extends MaxAgeEntry = MaxAgeEnt
 export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, property: string);
 
 export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, property = 'maxAge') {
-	let processingKey: K | undefined;
-	let processingTimer: NodeJS.Timer | undefined;
-	let processingDeferred: DeferredPromise<void> | undefined;
+	const timerMap = new Map();
 
-	const cleanup = async () => {
-		if (processingKey !== undefined) {
-			// If we are already processing an item, we can safely exit
+	const setupTimer = async (item: [K, V]) => {
+		if (!timerMap.has(item[0])) {
+			timerMap.set(item[0], {processingTimer: null, processingDeferred: null});
+		}
+		const timeItem = timerMap.get(item[0]);
+		if (timeItem.processingTimer) {
+			clearTimeout(timeItem.processingTimer);
+		}
+
+		const itemProcessingDeferred = pDefer() as DeferredPromise;
+		timeItem.processingDeferred = itemProcessingDeferred;
+
+		const delay = (item[1] as any)[property] - Date.now();
+		if (delay <= 0) {
+			// Remove the item immediately if the delay is equal to or below 0
+			map.delete(item[0]);
+			itemProcessingDeferred.resolve();
+
 			return;
 		}
 
-		const setupTimer = async (item: [K, V]) => {
-			processingDeferred = pDefer() as DeferredPromise;
-
-			const delay = (item[1] as any)[property] - Date.now();
-
-			if (delay <= 0) {
-				// Remove the item immediately if the delay is equal to or below 0
-				map.delete(item[0]);
-				processingDeferred.resolve();
-
-				return;
+		const itemProcessingTimer = setTimeout(() => {
+			// Remove the item when the timeout fires
+			map.delete(item[0]);
+			if (itemProcessingDeferred) {
+				itemProcessingDeferred.resolve();
 			}
 
-			// Keep track of the current processed key
-			processingKey = item[0];
+			timerMap.delete(item[0]);
+		}, delay);
+		timeItem.processingTimer = itemProcessingTimer;
 
-			processingTimer = setTimeout(() => {
-				// Remove the item when the timeout fires
-				map.delete(item[0]);
+		// tslint:disable-next-line:strict-type-predicates
+		if (typeof itemProcessingTimer.unref === 'function') { // isnt it always true?
+			// Don't hold up the process from exiting
+			itemProcessingTimer.unref();
+		}
 
-				if (processingDeferred) {
-					processingDeferred.resolve();
-				}
-			}, delay);
+		return itemProcessingDeferred.promise;
+	};
 
-			// tslint:disable-next-line:strict-type-predicates
-			if (typeof processingTimer.unref === 'function') {
-				// Don't hold up the process from exiting
-				processingTimer.unref();
-			}
-
-			return processingDeferred.promise;
-		};
-
+	const cleanup = async () => {
 		try {
 			for (const entry of map) {
-				await setupTimer(entry);
+				await setupTimer(entry); // FIXME: catch here
 			}
 		} catch {
 			// Do nothing if an error occurs, this means the timer was cleaned up and we should stop processing
 		}
-
-		processingKey = undefined;
-	};
-
-	const reset = () => {
-		processingKey = undefined;
-
-		if (processingTimer !== undefined) {
-			clearTimeout(processingTimer);
-
-			processingTimer = undefined;
-		}
-
-		if (processingDeferred !== undefined) {			// tslint:disable-line:early-exit
-			processingDeferred.reject(undefined);
-
-			processingDeferred = undefined;
-		}
 	};
 
 	const originalSet = map.set.bind(map);
+	const originalClear = map.clear.bind(map);
 
 	map.set = (key: K, value: V) => {
 		if (map.has(key)) {
@@ -112,18 +95,20 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 		// Call the original `map.set`
 		const result = originalSet(key, value);
 
-		// If we are already processing a key and the key added is the current processed key, stop processing it
-		if (processingKey && processingKey === key) {
-			reset();
-		}
-
-		// Always run the cleanup method in case it wasn't started yet
-		cleanup();			// tslint:disable-line:no-floating-promises
-
+		setupTimer([key, value]); // tslint:disable-line:no-floating-promises
 		return result;
 	};
+	map.clear = () => {
+		for(const timerItem of timerMap.values()) {
+			if (timerItem.processingTimer) clearTimeout(timerItem.processingTimer);
+			if (timerItem.processingDeferred) timerItem.processingDeferred.resolve();
+		}
+		timerMap.clear();
+		return originalClear();
+	}
 
 	cleanup();				// tslint:disable-line:no-floating-promises
+	// ! instead set up timer targetly / ?
 
 	return map;
 }
