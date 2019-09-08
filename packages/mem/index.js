@@ -26,7 +26,8 @@ const mem = (fn, {
 	cacheKey = defaultCacheKey,
 	cache = new Map(),
 	cachePromiseRejection = true,
-	maxAge
+	maxAge,
+	updateMaxAgeOnAccess
 } = {}) => {
 	if (typeof maxAge === 'number' || typeof maxAge === 'function') {
 		mapAgeCleaner(cache);
@@ -35,12 +36,22 @@ const mem = (fn, {
 	const getExpirationDate = typeof maxAge === 'function' ?
 		maxAge :
 		() => typeof maxAge === 'number' ? Date.now() + maxAge : Infinity;
+	const getMaxAgeExtension = typeof updateMaxAgeOnAccess === 'number' ?
+		(_, currentMaxAge) => ({maxAge: currentMaxAge + updateMaxAgeOnAccess}) :
+		(key, currentMaxAge) => updateMaxAgeOnAccess(key, currentMaxAge);
 
 	const memoized = function (...arguments_) {
 		const key = cacheKey(...arguments_);
 
 		if (cache.has(key)) {
 			const cachedValue = cache.get(key);
+			if (updateMaxAgeOnAccess) {
+				// TODO: throttle the update
+				const increment = getMaxAgeExtension(key, cachedValue.maxAge);
+				const newMaxAge = increment.maxAge || cachedValue.maxAge + increment.maxAgeIncrement;
+				cache.set(key, {maxAge: newMaxAge, data: cachedValue.data});
+			}
+
 			return cachedValue.data;
 		}
 
@@ -48,7 +59,7 @@ const mem = (fn, {
 
 		cache.set(key, {
 			data: cacheItem,
-			maxAge: getExpirationDate(cacheItem)
+			maxAge: getExpirationDate(key)
 		});
 
 		if (isPromise(cacheItem) && cachePromiseRejection === false) {
