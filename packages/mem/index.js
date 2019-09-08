@@ -28,22 +28,27 @@ const mem = (fn, {
 	cachePromiseRejection = true,
 	maxAge
 } = {}) => {
-	if (typeof maxAge === 'number') {
+	if (typeof maxAge === 'number' || typeof maxAge === 'function') {
 		mapAgeCleaner(cache);
 	}
+
+	const getExpirationDate = typeof maxAge === 'function' ?
+		maxAge :
+		() => typeof maxAge === 'number' ? Date.now() + maxAge : Infinity;
 
 	const memoized = function (...arguments_) {
 		const key = cacheKey(...arguments_);
 
 		if (cache.has(key)) {
-			return cache.get(key).data;
+			const cachedValue = cache.get(key);
+			return cachedValue.data;
 		}
 
 		const cacheItem = fn.apply(this, arguments_);
 
 		cache.set(key, {
 			data: cacheItem,
-			maxAge: maxAge ? Date.now() + maxAge : Infinity
+			maxAge: getExpirationDate(cacheItem)
 		});
 
 		if (isPromise(cacheItem) && cachePromiseRejection === false) {
