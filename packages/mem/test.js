@@ -103,12 +103,41 @@ test('maxAge complex option', async t => {
 	t.is(memoized(1), 1);
 	await delay(300);
 	t.is(cache.size, 0);
-	
+
 	t.is(memoized(1), 1);
 	t.is(memoized(1), 1);
 	t.is(memoized(1), 1);
 	t.is(cache.size, 1);
 	await delay(580);
+	t.is(cache.size, 1);
+	await delay(120);
+	t.is(cache.size, 0);
+});
+
+test('maxAge complex option refresh', async t => {
+	const fixture = i => i;
+	const cache = new Map();
+	const memoized = mem(fixture, {cache, maxAge: {ttl: 200, refreshOnAccess: {extendBy: 200, throttle: 100}}});
+	t.is(memoized(1), 1);
+	await delay(300);
+	t.is(cache.size, 0);
+
+	t.is(memoized(1), 1);
+	console.log(cache.get(1));
+	t.is(memoized(1), 1);
+	console.log(cache.get(1).lastRecordedAccess);
+	t.is(memoized(1), 1);
+	console.log(cache.get(1).lastRecordedAccess);
+	t.is(cache.size, 1);
+	await delay(480); // Will be too long this time because of the throttle
+	t.is(cache.size, 0);
+
+	t.is(memoized(1), 1);
+	await delay(120);
+	t.is(memoized(1), 1);
+	await delay(120);
+	t.is(memoized(1), 1);
+	await delay(120);
 	t.is(cache.size, 1);
 	await delay(120);
 	t.is(cache.size, 0);
