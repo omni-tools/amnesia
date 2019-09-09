@@ -22,33 +22,53 @@ const defaultCacheKey = (...arguments_) => {
 	return JSON.stringify(arguments_);
 };
 
+const getMaxAgeConfiguration = maxAge => {
+	if (!['number', 'function', 'object'].includes(typeof maxAge)) {
+		return {activated: false, getMaxAge: () => Infinity, extendMaxAge: false};
+	}
+
+	if (typeof maxAge === 'number') {
+		return {activated: true, getMaxAge: () => Date.now() + maxAge, extendMaxAge: false};
+	}
+
+	if (typeof maxAge === 'function') {
+		return {activated: true, getMaxAge: maxAge};
+	}
+
+	if (maxAge.ttl || maxAge.getExpirationDate) {
+		const extendMaxAgeOnAccess = (typeof maxAge.extendOnAccess === 'number') && ((_, currentMaxAge) => currentMaxAge + maxAge.extendOnAccess);
+		const getNewMaxAgeOnAccess = (typeof maxAge.setOnAccess === 'function') && maxAge.setOnAccess;
+
+		return {
+			activated: true,
+			getMaxAge: maxAge.ttl ? () => Date.now() + maxAge.ttl : maxAge.getExpirationDate,
+			getMaxAgeExtension: extendMaxAgeOnAccess || getNewMaxAgeOnAccess
+		};
+	}
+
+	throw new Error('Invalid max age config (was given an object with a maxAge key)');
+};
+
 const mem = (fn, {
 	cacheKey = defaultCacheKey,
 	cache = new Map(),
 	cachePromiseRejection = true,
-	maxAge,
-	updateMaxAgeOnAccess
+	maxAge
 } = {}) => {
-	if (typeof maxAge === 'number' || typeof maxAge === 'function') {
+	const maxAgeConfig = getMaxAgeConfiguration(maxAge);
+	console.log(maxAgeConfig)
+	if (maxAgeConfig.activated) {
 		mapAgeCleaner(cache);
 	}
-
-	const getExpirationDate = typeof maxAge === 'function' ?
-		maxAge :
-		() => typeof maxAge === 'number' ? Date.now() + maxAge : Infinity;
-	const getMaxAgeExtension = typeof updateMaxAgeOnAccess === 'number' ?
-		(_, currentMaxAge) => ({maxAge: currentMaxAge + updateMaxAgeOnAccess}) :
-		(key, currentMaxAge) => updateMaxAgeOnAccess(key, currentMaxAge);
 
 	const memoized = function (...arguments_) {
 		const key = cacheKey(...arguments_);
 
 		if (cache.has(key)) {
 			const cachedValue = cache.get(key);
-			if (updateMaxAgeOnAccess) {
+			if (maxAgeConfig.getMaxAgeExtension) {
 				// TODO: throttle the update
-				const increment = getMaxAgeExtension(key, cachedValue.maxAge);
-				const newMaxAge = increment.maxAge || cachedValue.maxAge + increment.maxAgeIncrement;
+				const newMaxAge = maxAgeConfig.getMaxAgeExtension(key, cachedValue.maxAge);
 				cache.set(key, {maxAge: newMaxAge, data: cachedValue.data});
 			}
 
@@ -59,7 +79,7 @@ const mem = (fn, {
 
 		cache.set(key, {
 			data: cacheItem,
-			maxAge: getExpirationDate(key)
+			maxAge: maxAgeConfig.getMaxAge(key)
 		});
 
 		if (isPromise(cacheItem) && cachePromiseRejection === false) {

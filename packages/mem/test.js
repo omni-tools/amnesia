@@ -82,6 +82,38 @@ test('maxAge option', async t => {
 	t.is(memoized(1), 1);
 });
 
+test('maxAge function option', async t => {
+	const fixture = i => i;
+	const cache = new Map();
+	const memoized = mem(fixture, {cache, maxAge: i => Date.now() + (i * 100)});
+	t.is(memoized(1), 1);
+	t.is(memoized(2), 2);
+	t.is(cache.size, 2);
+	await delay(50);
+	t.is(cache.size, 2);
+	await delay(100);
+	t.is(cache.size, 1);
+	t.true(cache.has(2));
+});
+
+test('maxAge complex option', async t => {
+	const fixture = i => i;
+	const cache = new Map();
+	const memoized = mem(fixture, {cache, maxAge: {ttl: 200, extendOnAccess: 200}});
+	t.is(memoized(1), 1);
+	await delay(300);
+	t.is(cache.size, 0);
+	
+	t.is(memoized(1), 1);
+	t.is(memoized(1), 1);
+	t.is(memoized(1), 1);
+	t.is(cache.size, 1);
+	await delay(580);
+	t.is(cache.size, 1);
+	await delay(120);
+	t.is(cache.size, 0);
+});
+
 test('maxAge option deletes old items', async t => {
 	let i = 0;
 	const fixture = () => i++;
