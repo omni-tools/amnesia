@@ -9,6 +9,9 @@
 		"email": "sindresorhus@gmail.com",
 		"url": "sindresorhus.com"
 	},
+	"publishConfig": {
+	  "access": "public"
+	},
 	"engines": {
 		"node": ">=8"
 	},
