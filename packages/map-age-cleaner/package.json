@@ -1,9 +1,9 @@
 {
-	"name": "map-age-cleaner",
+	"name": "@omni-tools/map-age-cleaner",
 	"version": "0.1.3",
 	"description": "Automatically cleanup expired items in a Map",
 	"license": "MIT",
-	"repository": "SamVerschueren/map-age-cleaner",
+	"repository": "omni-tools/amnesia",
 	"author": {
 		"name": "Sam Verschueren",
 		"email": "sam.verschueren@gmail.com",

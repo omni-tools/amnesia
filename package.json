@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "postinstall": "lerna bootstrap --no-package-lock",
+    "lerna": "lerna",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
