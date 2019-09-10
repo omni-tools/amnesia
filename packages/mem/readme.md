@@ -1,62 +1,66 @@
-# mem [![Build Status](https://travis-ci.org/sindresorhus/mem.svg?branch=master)](https://travis-ci.org/sindresorhus/mem)
+# Mem
+
+[![Npm Version](https://img.shields.io/npm/v/@omni-tools/mem)](https://www.npmjs.com/package/@omni-tools/mem)
+[![Build Status](https://travis-ci.org/omni-tools/amnesia.svg?branch=master)](https://travis-ci.org/omni-tools/amnesia.svg)
+<!-- TODO: restore [![codecov](https://codecov.io/gh/SamVerschueren/map-age-cleaner/badge.svg?branch=master)](https://codecov.io/gh/SamVerschueren/map-age-cleaner?branch=master)-->
+
+> (_Memory Expirable Memoize_) :floppy_disk:
 
 > [Memoize](https://en.wikipedia.org/wiki/Memoization) functions - An optimization used to speed up consecutive function calls by caching the result of calls with identical input
 
 Memory is automatically released when an item expires.
 
+:loudspeaker: This is a fork of [@Sindresorhus](https://github.com/Sindresorhus) [`mem`](https://github.com/SamVerschueren/map-age-cleaner) package. It adds possibility to have non static max age, and a extend max age on access. (with a throttle mecanism)
+
+So far its still kind of experiment, but
+It might end up to be merged :slightly_smiling_face:
 
 ## Install
 
 ```
-$ npm install mem
+$ npm install @omni-tools/mem
 ```
 
 
 ## Usage
 
 ```js
-const mem = require('mem');
+const mem = require('@omni-tools/mem');
 
 let i = 0;
 const counter = () => ++i;
 const memoized = mem(counter);
 
-memoized('foo');
-//=> 1
+memoized('foo'); //=> 1
 
 // Cached as it's the same arguments
-memoized('foo');
-//=> 1
+memoized('foo'); //=> 1
 
 // Not cached anymore as the arguments changed
-memoized('bar');
-//=> 2
+memoized('bar'); //=> 2
 
-memoized('bar');
-//=> 2
+memoized('bar'); //=> 2
 ```
 
 ##### Works fine with promise returning functions
 
 ```js
-const mem = require('mem');
+const mem = require('@omni-tools/mem');
 
 let i = 0;
 const counter = async () => ++i;
 const memoized = mem(counter);
 
 (async () => {
-	console.log(await memoized());
-	//=> 1
+	console.log(await memoized()); //=> 1
 
 	// The return value didn't increase as it's cached
-	console.log(await memoized());
-	//=> 1
+	console.log(await memoized()); //=> 1
 })();
 ```
 
 ```js
-const mem = require('mem');
+const mem = require('@omni-tools/mem');
 const got = require('got');
 const delay = require('delay');
 
@@ -77,6 +81,8 @@ const memGot = mem(got, {maxAge: 1000});
 
 
 ## API
+
+> :warning: The Api documentation needs to be updated to document the new optional features!
 
 ### mem(fn, options?)
 
@@ -139,7 +145,7 @@ If you want to know how many times your cache had a hit or a miss, you can make 
 #### Example
 
 ```js
-const mem = require('mem');
+const mem = require('@omni-tools/mem');
 const StatsMap = require('stats-map');
 const got = require('got');
 
@@ -151,8 +157,7 @@ const memGot = mem(got, {cache});
 	await memGot('sindresorhus.com');
 	await memGot('sindresorhus.com');
 
-	console.log(cache.stats);
-	//=> {hits: 2, misses: 1}
+	console.log(cache.stats); //=> {hits: 2, misses: 1}
 })();
 ```
 
@@ -160,16 +165,3 @@ const memGot = mem(got, {cache});
 ## Related
 
 - [p-memoize](https://github.com/sindresorhus/p-memoize) - Memoize promise-returning & async functions
-
-
----
-
-<div align="center">
-	<b>
-		<a href="https://tidelift.com/subscription/pkg/npm-mem?utm_source=npm-mem&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
-	</b>
-	<br>
-	<sub>
-		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
-	</sub>
-</div>
