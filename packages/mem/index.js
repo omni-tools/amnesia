@@ -24,7 +24,7 @@ const defaultCacheKey = (...arguments_) => {
 
 const DEFAULT_THROTTLE = 1000;
 const getMaxAgeConfiguration = maxAge => {
-	if (!['number', 'function', 'object'].includes(typeof maxAge)) {
+	if (!maxAge || !['number', 'function', 'object'].includes(typeof maxAge)) {
 		return {activated: false, getMaxAge: () => Infinity, extendMaxAge: false};
 	}
 
