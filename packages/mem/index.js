@@ -49,7 +49,7 @@ const getMaxAgeConfiguration = maxAge => {
 		const refreshConfig = maxAge.refreshOnAccess;
 		if (refreshConfig) {
 			refreshOnAccess = {
-				getMaxAge: refreshConfig.set || (() => new Date() + refreshConfig.extendBy),
+				getMaxAge: refreshConfig.set || (() => Date.now() + refreshConfig.extendBy),
 				throttle: typeof refreshConfig.throttle === 'number' ? refreshConfig.throttle : refreshConfig.throttle && DEFAULT_THROTTLE
 			};
 		}
