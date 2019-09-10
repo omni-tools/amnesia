@@ -35,6 +35,11 @@ test('stats', t => {
 		hits: 1,
 		misses: 3
 	});
+
+	// see no see
+	t.false(map.bypass.has('unicorn'))
+	t.true(map.bypass.has('foo'))
+
 	t.deepEqual(map.detailedStats, {
 		read: {
 			foo: 1,

@@ -53,6 +53,18 @@ class StatsMap extends Map {
 		}
 		return has;
 	}
+
+	get bypass() { // TODO find better name
+		const get = super.get.bind(this);
+		const set = super.set.bind(this);
+		const has = super.has.bind(this);
+		return {
+			get, set, has
+		};
+	}
+	// TODO change description and to string
+	// TODO get the map?
+
 }
 
 module.exports = StatsMap;
