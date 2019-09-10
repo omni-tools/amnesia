@@ -1,7 +1,7 @@
 'use strict';
 const mimicFn = require('mimic-fn');
 const isPromise = require('p-is-promise');
-const mapAgeCleaner = require('map-age-cleaner');
+const mapAgeCleaner = require('@omni-tools/map-age-cleaner');
 
 const cacheStore = new WeakMap();
 
