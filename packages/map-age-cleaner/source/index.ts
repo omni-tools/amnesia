@@ -65,7 +65,7 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 		timeItem.processingTimer = itemProcessingTimer;
 
 		// tslint:disable-next-line:strict-type-predicates
-		if (typeof itemProcessingTimer.unref === 'function') { // isnt it always true?
+		if (typeof itemProcessingTimer.unref === 'function') { // Isnt it always true?
 			// Don't hold up the process from exiting
 			itemProcessingTimer.unref();
 		}
@@ -89,14 +89,19 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 		return result;
 	};
 	map.clear = () => {
-		for(const timerItem of timerMap.values()) {
-			if (timerItem.processingTimer) clearTimeout(timerItem.processingTimer);
-			if (timerItem.processingDeferred) timerItem.processingDeferred.resolve();
+		for (const timerItem of timerMap.values()) {
+			if (timerItem.processingTimer) {
+				clearTimeout(timerItem.processingTimer);
+			}
+			if (timerItem.processingDeferred) {
+				timerItem.processingDeferred.resolve();
+			}
 		}
 		timerMap.clear();
 		return originalClear();
-	}
+	};
 	for (const entry of map) {
+		// tslint:disable-next-line: no-empty
 		setupTimer(entry).catch(() => {});
 	}
 
