@@ -38,13 +38,13 @@
 	],
 	"dependencies": {
 		"@omni-tools/map-age-cleaner": "^1.0.0-alpha.0",
-		"mimic-fn": "^2.1.0",
-		"p-is-promise": "^2.1.0"
+		"mimic-fn": "^3.0.0",
+		"p-is-promise": "^3.0.0"
 	},
 	"devDependencies": {
-		"ava": "^1.4.1",
-		"delay": "^4.1.0",
-		"tsd": "^0.7.3",
+		"ava": "^2.3.0",
+		"delay": "^4.3.0",
+		"tsd": "^0.7.4",
 		"xo": "^0.24.0"
 	}
 }

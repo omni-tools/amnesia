@@ -1,11 +1,13 @@
 /* tslint:disable:await-promise */
-import test from 'ava';
+import anyTest, {TestInterface} from 'ava';
+
 import delay from 'delay';
 import mapAgeCleaner from '.';
 
 interface Context {
 	map: Map<string, {maxAge: number; data: any}>;
 }
+const test = anyTest as TestInterface<Context>;
 
 test.beforeEach(t => {
 	t.context.map = new Map();
@@ -29,7 +31,7 @@ test('auto removal on initial Map', async t => {
 });
 
 test('auto removal', async t => {
-	const {map} = t.context as Context;
+	const {map} = t.context;
 	mapAgeCleaner(map);
 	map.set('unicorn', {maxAge: Date.now() + 1000, data: '🦄'});
 
@@ -71,7 +73,7 @@ test('use other property name', async t => {
 });
 
 test('order on reset', async t => {
-	const {map} = t.context as Context;
+	const {map} = t.context;
 	mapAgeCleaner(map);
 
 	map.set('unicorn', {maxAge: Date.now() + 1000, data: '🦄'});
@@ -108,7 +110,7 @@ test('order on reset', async t => {
 });
 
 test('reset currently processed item', async t => {
-	const {map} = t.context as Context;
+	const {map} = t.context;
 	mapAgeCleaner(map);
 
 	map.set('unicorn', {maxAge: Date.now() + 1000, data: '🦄'});
@@ -124,7 +126,7 @@ test('reset currently processed item', async t => {
 });
 
 test('reset currently processed item and process next', async t => {
-	const {map} = t.context as Context;
+	const {map} = t.context;
 	mapAgeCleaner(map);
 
 	map.set('unicorn', {maxAge: Date.now() + 1000, data: '🦄'});

@@ -14,12 +14,17 @@ interface DeferredPromise<T = any, E = any> {
 	reject(error?: E): void;
 }
 
+interface TimerItem<T = any> {
+	processingTimer?: NodeJS.Timer;
+	processingDeferred?: DeferredPromise<T>;
+}
+
 /**
  * Automatically cleanup the items in the provided `map`. The property of the expiration timestamp should be named `maxAge`.
  *
  * @param map - Map instance which should be cleaned up.
  */
-export default function mapAgeCleaner<K = any, V extends MaxAgeEntry = MaxAgeEntry>(map: Map<K, V>);
+export default function mapAgeCleaner<K, V extends MaxAgeEntry = MaxAgeEntry>(map: Map<K, V>): Map<K, V>;
 
 /**
  * Automatically cleanup the items in the provided `map`.
@@ -27,16 +32,16 @@ export default function mapAgeCleaner<K = any, V extends MaxAgeEntry = MaxAgeEnt
  * @param map - Map instance which should be cleaned up.
  * @param property - Name of the property which olds the expiry timestamp.
  */
-export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, property: string);
+export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, property: string): Map<K, V>;
 
-export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, property = 'maxAge') {
-	const timerMap = new Map();
+export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, property = 'maxAge'): Map<K, V> {
+	const timerMap = new Map<K, TimerItem>();
 
-	const setupTimer = async (item: [K, V]) => {
+	const setupTimer = async (item: [K, V]): Promise<any> => {
 		if (!timerMap.has(item[0])) {
-			timerMap.set(item[0], {processingTimer: null, processingDeferred: null});
+			timerMap.set(item[0], {processingTimer: undefined, processingDeferred: undefined});
 		}
-		const timeItem = timerMap.get(item[0]);
+		const timeItem = timerMap.get(item[0]) || {};
 		if (timeItem.processingTimer) {
 			clearTimeout(timeItem.processingTimer);
 		}
@@ -44,7 +49,7 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 		const itemProcessingDeferred = pDefer() as DeferredPromise;
 		timeItem.processingDeferred = itemProcessingDeferred;
 
-		const delay = (item[1] as any)[property] - Date.now();
+		const delay = item[1][property] as number - Date.now();
 		if (delay <= 0) {
 			// Remove the item immediately if the delay is equal to or below 0
 			map.delete(item[0]);
@@ -53,15 +58,16 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 			return;
 		}
 
-		const itemProcessingTimer = setTimeout(() => {
+		const expireItem = (key: K): void => {
 			// Remove the item when the timeout fires
-			map.delete(item[0]);
+			map.delete(key);
 			if (itemProcessingDeferred) {
 				itemProcessingDeferred.resolve();
 			}
 
-			timerMap.delete(item[0]);
-		}, delay);
+			timerMap.delete(key);
+		};
+		const itemProcessingTimer = setTimeout(expireItem, delay, item[0]);
 		timeItem.processingTimer = itemProcessingTimer;
 
 		// tslint:disable-next-line:strict-type-predicates
@@ -76,7 +82,7 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 	const originalSet = map.set.bind(map);
 	const originalClear = map.clear.bind(map);
 
-	map.set = (key: K, value: V) => {
+	map.set = (key: K, value: V): Map<K, V> => {
 		if (map.has(key)) {
 			// If the key already exist, remove it so we can add it back at the end of the map.
 			map.delete(key);
@@ -88,6 +94,8 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 		setupTimer([key, value]); // tslint:disable-line:no-floating-promises
 		return result;
 	};
+
+	// tslint:disable-next-line: typedef
 	map.clear = () => {
 		for (const timerItem of timerMap.values()) {
 			if (timerItem.processingTimer) {
@@ -98,8 +106,9 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 			}
 		}
 		timerMap.clear();
-		return originalClear();
+		originalClear();
 	};
+
 	for (const entry of map) {
 		// tslint:disable-next-line: no-empty
 		setupTimer(entry).catch(() => {});
@@ -110,4 +119,5 @@ export default function mapAgeCleaner<K = any, V = Entry>(map: Map<K, V>, proper
 
 // Add support for CJS
 module.exports = mapAgeCleaner;
+// tslint:disable-next-line: no-unsafe-any
 module.exports.default = mapAgeCleaner;
