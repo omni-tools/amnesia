@@ -1,4 +1,7 @@
 import pDefer from 'p-defer';
+import Debug from 'debug';
+
+const debug = Debug('omni-tools:map-age-cleaner');
 
 interface Entry {
 	[key: string]: any;
@@ -30,33 +33,41 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 	const timerMap = new Map<K, TimerItem>();
 	const safeOptions = options || {};
 	const {property = 'maxAge', onExpire} = safeOptions;
-	const setupTimer = async (item: [K, V]): Promise<any> => {
-		if (!timerMap.has(item[0])) {
-			timerMap.set(item[0], {processingTimer: undefined, processingDeferred: undefined});
+
+	const setupTimer = async ([key, value]: [K, V]): Promise<any> => {
+		const maxAge = value[property] as number;
+		debug(`setting up timer for item ${key} scheduled at ${maxAge}`);
+		if (!timerMap.has(key)) {
+			timerMap.set(key, {processingTimer: undefined, processingDeferred: undefined});
 		}
-		const timeItem = timerMap.get(item[0]) || {};
+		const timeItem = timerMap.get(key) || {};
 		if (timeItem.processingTimer) {
+			debug(`existing timer on ${key} expiring it first`);
 			clearTimeout(timeItem.processingTimer);
 		}
 
 		const itemProcessingDeferred = pDefer() as DeferredPromise;
 		timeItem.processingDeferred = itemProcessingDeferred;
 
-		const delay = item[1][property] as number - Date.now();
+		const delay = maxAge - Date.now();
 		if (delay <= 0) {
 			// Remove the item immediately if the delay is equal to or below 0
-			map.delete(item[0]);
+			map.delete(key);
 			itemProcessingDeferred.resolve();
 
 			return;
 		}
 
+		// tslint:disable-next-line: no-shadowed-variable
 		const expireItem = (key: K): void => {
+			debug(`expire the following key ${key}`);
 			if (onExpire) {
 				try {
 					onExpire(key, map.get(key));
-				// tslint:disable-next-line: no-empty no-unused
-				} catch (err) {} // TODO add debug
+				} catch (err) {
+					// tslint:disable-next-line: no-unsafe-any
+					debug(`issue occured while expiring item associated with key ${key}: ${err.message}`);
+				}
 			}
 			// Remove the item when the timeout fires
 			map.delete(key);
@@ -66,7 +77,7 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 
 			timerMap.delete(key);
 		};
-		const itemProcessingTimer = setTimeout(expireItem, delay, item[0]);
+		const itemProcessingTimer = setTimeout(expireItem, delay, key);
 		timeItem.processingTimer = itemProcessingTimer;
 
 		// tslint:disable-next-line:strict-type-predicates
@@ -82,7 +93,7 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 	const originalClear = map.clear.bind(map);
 
 	map.set = (key: K, value: V): Map<K, V> => {
-		if (map.has(key)) {
+		if (map.has(key)) {  // FIXME: to kill
 			// If the key already exist, remove it so we can add it back at the end of the map.
 			map.delete(key);
 		}
@@ -96,7 +107,8 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 
 	// tslint:disable-next-line: typedef
 	map.clear = () => {
-		for (const timerItem of timerMap.values()) {
+		for (const [key, timerItem] of timerMap.entries()) {
+			debug(`clearing timer attached to key ${key}`);
 			if (timerItem.processingTimer) {
 				clearTimeout(timerItem.processingTimer);
 			}
@@ -108,9 +120,11 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 		originalClear();
 	};
 
-	for (const entry of map) {
-		// tslint:disable-next-line: no-empty
-		setupTimer(entry).catch(() => {});
+	for (const [key, value] of map) {
+		debug(`initial set up of timer on key ${key}`);
+		setupTimer([key, value]).catch((err: Error) => {
+			debug(`some error occured while setting timer on key ${key}: ${err.message}`);
+		});
 	}
 
 	return map;

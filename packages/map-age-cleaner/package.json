@@ -38,6 +38,8 @@
 		"expiring"
 	],
 	"dependencies": {
+		"@types/debug": "^4.1.5",
+		"debug": "^4.1.1",
 		"p-defer": "^3.0.0"
 	},
 	"devDependencies": {
