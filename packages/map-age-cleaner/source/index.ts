@@ -27,7 +27,9 @@ interface TimerItem<T = any> {
  * Automatically cleanup the items in the provided `map`.
  *
  * @param map - Map instance which should be cleaned up.
- * @param property - Name of the property which olds the expiry timestamp. §!! FIXME EXPIRE
+ * @param options - Options for the mapAgeCleaner
+ * @param options.property - Name of the property which olds the expiry timestamp. §!! FIXME EXPIRE
+ * @param options.onExpire - Callback to handle/be notified of the expiration of item
  */
 export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: MaxAgeOptions<K, V>): Map<K, V> {
 	const timerMap = new Map<K, TimerItem>();
@@ -93,15 +95,10 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 	const originalClear = map.clear.bind(map);
 
 	map.set = (key: K, value: V): Map<K, V> => {
-		if (map.has(key)) {  // FIXME: to kill
-			// If the key already exist, remove it so we can add it back at the end of the map.
-			map.delete(key);
-		}
-
-		// Call the original `map.set`
 		const result = originalSet(key, value);
-
-		setupTimer([key, value]); // tslint:disable-line:no-floating-promises
+		setupTimer([key, value]).catch((err: Error) => {
+			debug(`some error occured while setting timer on key ${key}: ${err.message}`);
+		});
 		return result;
 	};
 
