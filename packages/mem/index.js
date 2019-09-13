@@ -2,6 +2,7 @@
 const mimicFn = require('mimic-fn');
 const isPromise = require('p-is-promise');
 const mapAgeCleaner = require('@omni-tools/map-age-cleaner');
+const debug = require('debug')('omni-tools:mem');
 
 const cacheStore = new WeakMap();
 
@@ -68,11 +69,11 @@ const mem = (fn, {
 	cacheKey = defaultCacheKey,
 	cache = new Map(),
 	cachePromiseRejection = true,
-	maxAge,
-	onExpire
+	maxAge
 } = {}) => {
 	const maxAgeConfig = getMaxAgeConfiguration(maxAge);
 	if (maxAgeConfig.activated) {
+		debug('calling max-age-cleaner to set up the expire mecanism');
 		mapAgeCleaner(cache);
 	}
 
@@ -80,16 +81,22 @@ const mem = (fn, {
 		const key = cacheKey(...arguments_);
 
 		if (cache.has(key)) {
+			debug(`${fn.name} has cached value for ${key}`);
 			const cachedValue = cache.get(key);
 			if (maxAgeConfig.refreshOnAccess) {
 				const {throttle} = maxAgeConfig.refreshOnAccess;
 				if (throttle) {
-					const shouldRefreshMaxAge = !cachedValue.lastRecordedAccess || cachedValue.lastRecordedAccess + throttle < Date.now();
+					const endThrottle = cachedValue.lastRecordedAccess && cachedValue.lastRecordedAccess + throttle;
+					const shouldRefreshMaxAge = !endThrottle || endThrottle < Date.now();
 					if (shouldRefreshMaxAge) {
+						debug(`refreshing timer for ${fn.name}:${key}`);
 						const newMaxAge = maxAgeConfig.refreshOnAccess.getMaxAge(key, cachedValue.maxAge);
 						cache.set(key, {maxAge: newMaxAge, data: cachedValue.data, lastRecordedAccess: Date.now()});
+					} else {
+						debug(`refreshing timer for ${fn.name}:${key} what throttled (throttle in place until ${endThrottle})`);
 					}
 				} else {
+					debug(`refreshing timer for ${fn.name}:${key}`);
 					const newMaxAge = maxAgeConfig.refreshOnAccess.getMaxAge(key, cachedValue.maxAge);
 					cache.set(key, {maxAge: newMaxAge, data: cachedValue.data});
 				}
