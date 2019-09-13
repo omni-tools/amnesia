@@ -143,6 +143,39 @@ test('maxAge complex option refresh', async t => {
 	t.is(cache.size, 0);
 });
 
+test('maxAge along with onExpire', async t => {
+	const fixture = (i, _) => i * 10;
+	const cache = new Map();
+
+	const expiredHash = [];
+	const expiredArgs = [];
+	const expiredValues = [];
+	const onExpire = ({hash, value, args}) => {
+		expiredHash.push(hash);
+		expiredArgs.push(args);
+		expiredValues.push(value);
+	};
+
+	const memoized = mem(fixture, {cache, maxAge: 200, onExpire});
+	t.is(memoized(1, 'test'), 10);
+	await delay(220);
+	t.deepEqual(expiredHash, ['[1,"test"]']);
+	t.deepEqual(expiredArgs, [[1, 'test']]);
+	t.deepEqual(expiredValues, [10]);
+	t.is(cache.size, 0);
+
+	t.is(memoized(1, 'test'), 10);
+	t.is(cache.size, 1);
+	await delay(10);
+	t.is(memoized(2, 'test-bis'), 20);
+	t.is(cache.size, 2);
+	await delay(220);
+	t.is(cache.size, 0);
+	t.deepEqual(expiredHash, ['[1,"test"]', '[1,"test"]', '[2,"test-bis"]']);
+	t.deepEqual(expiredArgs, [[1, 'test'], [1, 'test'], [2, 'test-bis']]);
+	t.deepEqual(expiredValues, [10, 10, 20]);
+});
+
 test('maxAge option deletes old items', async t => {
 	let i = 0;
 	const fixture = () => i++;

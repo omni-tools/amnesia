@@ -6,13 +6,13 @@ const debug = require('debug')('omni-tools:mem');
 
 const cacheStore = new WeakMap();
 
-const defaultCacheKey = (...arguments_) => {
-	if (arguments_.length === 0) {
+const defaultCacheKey = (...args) => {
+	if (args.length === 0) {
 		return '__defaultKey';
 	}
 
-	if (arguments_.length === 1) {
-		const [firstArgument] = arguments_;
+	if (args.length === 1) {
+		const [firstArgument] = args;
 		const isObject = typeof firstArgument === 'object' && firstArgument !== null;
 		const isPrimitive = !isObject;
 		if (isPrimitive) {
@@ -20,7 +20,7 @@ const defaultCacheKey = (...arguments_) => {
 		}
 	}
 
-	return JSON.stringify(arguments_);
+	return JSON.stringify(args);
 };
 
 const DEFAULT_THROTTLE = 1000;
@@ -69,16 +69,22 @@ const mem = (fn, {
 	cacheKey = defaultCacheKey,
 	cache = new Map(),
 	cachePromiseRejection = true,
-	maxAge
+	maxAge,
+	onExpire
 } = {}) => {
 	const maxAgeConfig = getMaxAgeConfiguration(maxAge);
 	if (maxAgeConfig.activated) {
 		debug('calling max-age-cleaner to set up the expire mecanism');
-		mapAgeCleaner(cache);
+		if (onExpire) {
+			const wrapedOnExpire = (key, value) => onExpire({hash: key, args: value.args, value: value.data});
+			mapAgeCleaner(cache, {onExpire: wrapedOnExpire});
+		} else {
+			mapAgeCleaner(cache);
+		}
 	}
 
-	const memoized = function (...arguments_) {
-		const key = cacheKey(...arguments_);
+	const memoized = function (...args) {
+		const key = cacheKey(...args);
 
 		if (cache.has(key)) {
 			debug(`${fn.name} has cached value for ${key}`);
@@ -105,9 +111,10 @@ const mem = (fn, {
 			return cachedValue.data;
 		}
 
-		const cacheItem = fn.apply(this, arguments_);
+		const cacheItem = fn.apply(this, args);
 
 		cache.set(key, {
+			args,
 			data: cacheItem,
 			maxAge: maxAgeConfig.getMaxAge(key)
 		});
