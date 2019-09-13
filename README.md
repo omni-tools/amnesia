@@ -2,6 +2,7 @@
 > Memoize for node but with partial (selective) amnesia
 
 [![Build Status](https://travis-ci.com/omni-tools/amnesia.svg?branch=master)](https://travis-ci.com/omni-tools/amnesia)
+[![codecov](https://codecov.io/gh/omni-tools/amnesia/branch/master/graph/badge.svg)](https://codecov.io/gh/omni-tools/amnesia)
 
 ### Available releases:
 - **`@omni-tools/mem`**: [![mem npm version](https://img.shields.io/npm/v/@omni-tools/mem)](https://www.npmjs.com/package/@omni-tools/mem) -> [readme :open_book:](./packages/mem/README.md)

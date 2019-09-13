@@ -8,7 +8,8 @@
   "scripts": {
     "postinstall": "lerna bootstrap --no-package-lock",
     "lerna": "lerna",
-    "test": "lerna run test"
+    "test": "lerna run test",
+    "publish-coverage": "lerna run generate-coverage-report && codecov"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,7 @@
     "cache"
   ],
   "dependencies": {
+    "codecov": "^3.5.0",
     "lerna": "^3.16.4"
   }
 }

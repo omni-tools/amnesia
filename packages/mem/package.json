@@ -16,8 +16,9 @@
 		"node": ">=8"
 	},
 	"scripts": {
-		"test": "xo && ava && tsd",
-		"lint": "xo"
+		"lint": "xo",
+		"test": "xo && nyc ava && tsd",
+		"generate-coverage-report": "nyc report --reporter=text-lcov > .nyc_output/coverage.lcov"
 	},
 	"files": [
 		"index.js",
@@ -45,7 +46,14 @@
 	"devDependencies": {
 		"ava": "^2.3.0",
 		"delay": "^4.3.0",
+		"nyc": "^14.1.1",
 		"tsd": "^0.7.4",
 		"xo": "^0.24.0"
+	},
+	"nyc": {
+		"all": true,
+		"exclude": [
+			"test.js"
+		]
 	}
 }

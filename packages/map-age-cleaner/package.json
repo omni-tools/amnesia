@@ -20,6 +20,7 @@
 		"prepublishOnly": "npm run build",
 		"pretest": "npm run build -- --sourceMap",
 		"test": "npm run lint && nyc ava dist/test.js",
+		"generate-coverage-report": "nyc report --reporter=text-lcov > .nyc_output/coverage.lcov",
 		"lint": "tslint --format stylish --project .",
 		"build": "npm run clean && tsc",
 		"clean": "del-cli dist"
