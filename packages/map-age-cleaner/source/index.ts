@@ -4,8 +4,9 @@ interface Entry {
 	[key: string]: any;
 }
 
-interface MaxAgeEntry extends Entry {
-	maxAge: number;
+interface MaxAgeOptions<K, V> {
+	property?: string;
+	onExpire?(key: K, value?: V): void;
 }
 
 interface DeferredPromise<T = any, E = any> {
@@ -20,23 +21,15 @@ interface TimerItem<T = any> {
 }
 
 /**
- * Automatically cleanup the items in the provided `map`. The property of the expiration timestamp should be named `maxAge`.
- *
- * @param map - Map instance which should be cleaned up.
- */
-export default function mapAgeCleaner<K, V extends MaxAgeEntry = MaxAgeEntry>(map: Map<K, V>): Map<K, V>;
-
-/**
  * Automatically cleanup the items in the provided `map`.
  *
  * @param map - Map instance which should be cleaned up.
- * @param property - Name of the property which olds the expiry timestamp.
+ * @param property - Name of the property which olds the expiry timestamp. §!! FIXME EXPIRE
  */
-export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, property: string): Map<K, V>;
-
-export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, property = 'maxAge'): Map<K, V> {
+export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: MaxAgeOptions<K, V>): Map<K, V> {
 	const timerMap = new Map<K, TimerItem>();
-
+	const safeOptions = options || {};
+	const {property = 'maxAge', onExpire} = safeOptions;
 	const setupTimer = async (item: [K, V]): Promise<any> => {
 		if (!timerMap.has(item[0])) {
 			timerMap.set(item[0], {processingTimer: undefined, processingDeferred: undefined});
@@ -59,6 +52,12 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, property = '
 		}
 
 		const expireItem = (key: K): void => {
+			if (onExpire) {
+				try {
+					onExpire(key, map.get(key));
+				// tslint:disable-next-line: no-empty no-unused
+				} catch (err) {} // TODO add debug
+			}
 			// Remove the item when the timeout fires
 			map.delete(key);
 			if (itemProcessingDeferred) {

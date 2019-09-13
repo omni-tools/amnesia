@@ -63,7 +63,7 @@ test('use other property name', async t => {
 		['unicorn', {timestamp: Date.now() + 1000, data: '🦄'}]
 	]);
 
-	mapAgeCleaner(map, 'timestamp');
+	mapAgeCleaner(map, {property: 'timestamp'});
 
 	t.true(map.has('unicorn'));
 

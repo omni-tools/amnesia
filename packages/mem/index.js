@@ -68,7 +68,8 @@ const mem = (fn, {
 	cacheKey = defaultCacheKey,
 	cache = new Map(),
 	cachePromiseRejection = true,
-	maxAge
+	maxAge,
+	onExpire
 } = {}) => {
 	const maxAgeConfig = getMaxAgeConfiguration(maxAge);
 	if (maxAgeConfig.activated) {
