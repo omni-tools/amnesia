@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "packages/mem/index.js",
   "scripts": {
-    "postinstall": "lerna bootstrap --no-package-lock",
+    "postinstall": "lerna bootstrap --no-package-lock --no-ci",
     "lerna": "lerna",
     "test": "lerna run test",
     "publish-coverage": "lerna run generate-coverage-report && codecov"
