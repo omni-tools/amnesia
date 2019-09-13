@@ -4,8 +4,12 @@ import anyTest, {TestInterface} from 'ava';
 import delay from 'delay';
 import mapAgeCleaner from '.';
 
+interface Item {
+	maxAge: number;
+	data: any;
+}
 interface Context {
-	map: Map<string, {maxAge: number; data: any}>;
+	map: Map<string, Item>;
 }
 const test = anyTest as TestInterface<Context>;
 
@@ -187,4 +191,48 @@ test('Insert of an outdated item', async t => {
 	map.set('old-unicorn', {maxAge: Date.now() - 1234, data: '🦄'});
 
 	t.is(map.size, 0);
+});
+
+test('Expiration trigger onExpire handler', async t => {
+	const expiredKeys: string[] = [];
+	const expiredValues: any[] = [];
+	const map = new Map([
+		['unicorn', {maxAge: Date.now() + 1234, data: '🦄'}],
+		['rainbow', {maxAge: Date.now() + 1000, data: '🌈'}]
+	]);
+	const onExpire = (key: string, value: Item): void => {
+		expiredKeys.push(key);
+		expiredValues.push(value.data);
+	};
+	mapAgeCleaner(map, {onExpire});
+
+	t.is(map.size, 2);
+
+	await delay(1400);
+
+	t.is(map.size, 0);
+	t.is(expiredKeys.length, 2);
+	t.is(expiredValues.length, 2);
+	t.deepEqual(expiredKeys, ['rainbow', 'unicorn']);
+	t.deepEqual(expiredValues, ['🌈', '🦄']);
+});
+
+test('Expiration trigger onExpire handler and resist to crash', async t => {
+	const map = new Map([
+		['unicorn', {maxAge: Date.now() + 123, data: '🦄'}],
+		['rainbow', {maxAge: Date.now() + 100, data: '🌈'}]
+	]);
+	let onExpireCallCount = 0;
+	const onExpire = (key: string, value: Item): void => {
+		onExpireCallCount++;
+		throw new Error(`${key} error with some ${value}`);
+	};
+	mapAgeCleaner(map, {onExpire});
+
+	t.is(map.size, 2);
+
+	await delay(400);
+
+	t.is(map.size, 0);
+	t.is(onExpireCallCount, 2);
 });
