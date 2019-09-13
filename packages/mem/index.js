@@ -62,7 +62,7 @@ const getMaxAgeConfiguration = maxAge => {
 		};
 	}
 
-	throw new Error('Invalid max age config (was given an object with a maxAge key)');
+	throw new Error('Invalid max age config (was given an object without a maxAge key(ttl or expirationDate))');
 };
 
 const mem = (fn, {

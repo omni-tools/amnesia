@@ -73,20 +73,14 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 			}
 			// Remove the item when the timeout fires
 			map.delete(key);
-			if (itemProcessingDeferred) {
-				itemProcessingDeferred.resolve();
-			}
-
+			itemProcessingDeferred.resolve();
 			timerMap.delete(key);
 		};
 		const itemProcessingTimer = setTimeout(expireItem, delay, key);
 		timeItem.processingTimer = itemProcessingTimer;
 
-		// tslint:disable-next-line:strict-type-predicates
-		if (typeof itemProcessingTimer.unref === 'function') { // Isnt it always true?
-			// Don't hold up the process from exiting
-			itemProcessingTimer.unref();
-		}
+		// Don't hold up the process from exiting
+		itemProcessingTimer.unref();
 
 		return itemProcessingDeferred.promise;
 	};
@@ -97,6 +91,7 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 	map.set = (key: K, value: V): Map<K, V> => {
 		const result = originalSet(key, value);
 		setupTimer([key, value]).catch((err: Error) => {
+			/* istanbul ignore next: should not be hapenning ever */
 			debug(`some error occured while setting timer on key ${key}: ${err.message}`);
 		});
 		return result;
@@ -120,6 +115,7 @@ export default function mapAgeCleaner<K, V = Entry>(map: Map<K, V>, options?: Ma
 	for (const [key, value] of map) {
 		debug(`initial set up of timer on key ${key}`);
 		setupTimer([key, value]).catch((err: Error) => {
+			/* istanbul ignore next: should not be hapenning ever */
 			debug(`some error occured while setting timer on key ${key}: ${err.message}`);
 		});
 	}

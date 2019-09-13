@@ -1,6 +1,7 @@
 {
     "extends": "tslint-xo",
     "rules": {
-        "no-use-before-declare": false
+        "no-use-before-declare": false,
+        "no-single-line-block-comment": false
     }
 }

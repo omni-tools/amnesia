@@ -96,10 +96,27 @@ test('maxAge function option', async t => {
 	t.true(cache.has(2));
 });
 
-test('maxAge complex option', async t => {
+test('maxAge complex option (extendOnAccess)', async t => {
 	const fixture = i => i;
 	const cache = new Map();
 	const memoized = mem(fixture, {cache, maxAge: {ttl: 200, extendOnAccess: 200}});
+	t.is(memoized(1), 1);
+	await delay(300);
+	t.is(cache.size, 0);
+
+	t.is(memoized(1), 1);
+	t.is(memoized(1), 1);
+	t.is(memoized(1), 1);
+	t.is(cache.size, 1);
+	await delay(580);
+	t.is(cache.size, 1);
+	await delay(120);
+	t.is(cache.size, 0);
+});
+test('maxAge complex option (setOnAccess)', async t => {
+	const fixture = i => i;
+	const cache = new Map();
+	const memoized = mem(fixture, {cache, maxAge: {ttl: 200, setOnAccess: (_, expirationDate) => expirationDate + 200}});
 	t.is(memoized(1), 1);
 	await delay(300);
 	t.is(cache.size, 0);
@@ -337,4 +354,10 @@ test('mem.clear() throws when called with a plain function', t => {
 	t.throws(() => {
 		mem.clear(() => {});
 	}, 'Can\'t clear a function that was not memoized!');
+});
+
+test('mem crash with invalid max age configuration.', t => {
+	t.throws(() => {
+		mem(() => {}, {maxAge: {yolo: true}});
+	}, 'Invalid max age config (was given an object without a maxAge key(ttl or expirationDate))');
 });
