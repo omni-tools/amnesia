@@ -7,20 +7,19 @@ declare namespace mem {
 		clear?: () => void;
 	}
 
-	type maxAgeForKey = (key: string) => number;
-	type newMaxAgeForKey = (key: string, currentMaxAge: number) => number;
-
- 	type MaxAgeOption = ({
-		readonly ttl: number
-	} |  {
-		readonly expirationDate: maxAgeForKey
-	}) & ({
-		readonly setOnAccess?: newMaxAgeForKey
-		readonly extensionThrottle?: number | boolean
-	} |  {
-		readonly extensionThrottle?: number | boolean
-		readonly extendOnAccess?: number
+ 	type SimpleMaxAgeOption = ({
+		readonly ttl: number;
+	} | {
+		readonly expirationDate: (key: string) => number;
 	});
+
+	type MaxAgeOption = SimpleMaxAgeOption | (SimpleMaxAgeOption & ({
+		readonly setOnAccess: (key: string, currentMaxAge: number) => number;
+		readonly extensionThrottle?: number | boolean;
+	} | {
+		readonly extendOnAccess: number;
+		readonly extensionThrottle?: number | boolean;
+	}));
 
 	interface Options<
 		ArgumentsType extends unknown[],
@@ -29,10 +28,11 @@ declare namespace mem {
 	> {
 		/**
 		Milliseconds until the cache expires.
+		(some some more complex option)
 
 		@default Infinity
 		*/
-		readonly maxAge?: number| maxAgeForKey | MaxAgeOption;
+		readonly maxAge?: number | ((key: string) => number) | MaxAgeOption;
 
 		/**
 		Determines the cache key for storing the result based on the function arguments. By default, if there's only one argument and it's a [primitive](https://developer.mozilla.org/en-US/docs/Glossary/Primitive), it's used directly as a key (if it's a `function`, its reference will be used as key), otherwise it's all the function arguments JSON stringified as an array.
@@ -54,6 +54,12 @@ declare namespace mem {
 		@default true
 		*/
 		readonly cachePromiseRejection?: boolean;
+
+		/**
+		Handler to manage item at expiration
+		@default noop
+		 */
+		readonly onExpire?: (item: {key: CacheKeyType, args: ArgumentsType, value: ReturnType}) => void
 	}
 }
 
