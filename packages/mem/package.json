@@ -1,6 +1,6 @@
 {
 	"name": "@omni-tools/mem",
-	"version": "6.0.0-alpha.3",
+	"version": "6.0.0-alpha.4",
 	"description": "Memoize functions - An optimization used to speed up consecutive function calls by caching the result of calls with identical input",
 	"license": "MIT",
 	"repository": "omni-tools/amnesia",
@@ -40,7 +40,7 @@
 		"promise"
 	],
 	"dependencies": {
-		"@omni-tools/map-age-cleaner": "^1.0.0-alpha.0",
+		"@omni-tools/map-age-cleaner": "^1.0.0-alpha.1",
 		"debug": "^4.1.1",
 		"mimic-fn": "^3.0.0",
 		"p-is-promise": "^3.0.0"
