@@ -1,10 +1,20 @@
-import {expectType} from 'tsd';
+import {expectType, expectError} from 'tsd';
 import mem = require('.');
 
 const fn = (string: string) => true;
 
 expectType<(string: string) => boolean>(mem(fn));
 expectType<(string: string) => boolean>(mem(fn, {maxAge: 1}));
+expectType<(string: string) => boolean>(mem(fn, {maxAge: () => 42}));
+expectType<(string: string) => boolean>(mem(fn, {maxAge: {ttl: 2}}));
+expectType<(string: string) => boolean>(mem(fn, {maxAge: {setOnAccess: () => 2, expirationDate: () => 4}}));
+expectType<(string: string) => boolean>(mem(fn, {maxAge: {setOnAccess: () => 2, expirationDate: () => 4, extensionThrottle: true}}));
+expectError<(string: string) => boolean>(mem(fn, {maxAge: {expirationDate: () => 4, extensionThrottle: true}}));
+expectError<(string: string) => boolean>(mem(fn, {maxAge: {extensionThrottle: true}}));
+expectType<(string: string) => boolean>(mem(fn, {maxAge: {extendOnAccess: 2, ttl: 4}}));
+expectType<(string: string) => boolean>(mem(fn, {maxAge: {extendOnAccess: 2, ttl: 4, extensionThrottle: 1}}));
+expectType<(string: string) => boolean>(mem(fn, {maxAge: () => 42}));
+expectType<(string: string) => boolean>(mem(fn, {maxAge: () => 42}));
 expectType<(string: string) => boolean>(mem(fn, {cacheKey: (...arguments_) => arguments_}));
 expectType<(string: string) => boolean>(
 	mem(
