@@ -26,11 +26,11 @@ const defaultCacheKey = (...args) => {
 const DEFAULT_THROTTLE = 1000;
 const getMaxAgeConfiguration = maxAge => {
 	if (!maxAge || !['number', 'function', 'object'].includes(typeof maxAge)) {
-		return {activated: false, getMaxAge: () => Infinity, extendMaxAge: false};
+		return {activated: false, getMaxAge: () => Infinity};
 	}
 
 	if (typeof maxAge === 'number') {
-		return {activated: true, getMaxAge: () => Date.now() + maxAge, extendMaxAge: false};
+		return {activated: true, getMaxAge: () => Date.now() + maxAge};
 	}
 
 	if (typeof maxAge === 'function') {
@@ -38,27 +38,19 @@ const getMaxAgeConfiguration = maxAge => {
 	}
 
 	if (maxAge.ttl || maxAge.expirationDate) {
-		let refreshOnAccess = null;
+		let getNewMaxAge = null;
+		const throttleMaxAgeUpdate = typeof maxAge.extensionThrottle === 'number' ? maxAge.extensionThrottle : maxAge.extensionThrottle && DEFAULT_THROTTLE;
 		if (typeof maxAge.extendOnAccess === 'number') {
-			refreshOnAccess = {throttle: false, getMaxAge: (_, currentMaxAge) => currentMaxAge + maxAge.extendOnAccess};
-		}
-
-		if (typeof maxAge.setOnAccess === 'function') {
-			refreshOnAccess = {throttle: false, getMaxAge: maxAge.setOnAccess};
-		}
-
-		const refreshConfig = maxAge.refreshOnAccess;
-		if (refreshConfig) {
-			refreshOnAccess = {
-				getMaxAge: refreshConfig.set || (() => Date.now() + refreshConfig.extendBy),
-				throttle: typeof refreshConfig.throttle === 'number' ? refreshConfig.throttle : refreshConfig.throttle && DEFAULT_THROTTLE
-			};
+			getNewMaxAge = (_, currentMaxAge) => currentMaxAge + maxAge.extendOnAccess;
+		} else if (typeof maxAge.setOnAccess === 'function') {
+			getNewMaxAge = maxAge.setOnAccess;
 		}
 
 		return {
 			activated: true,
 			getMaxAge: maxAge.ttl ? () => Date.now() + maxAge.ttl : maxAge.expirationDate,
-			refreshOnAccess
+			updateMaxAge: getNewMaxAge,
+			throttleMaxAgeUpdate
 		};
 	}
 
@@ -89,21 +81,20 @@ const mem = (fn, {
 		if (cache.has(key)) {
 			debug(`${fn.name} has cached value for ${key}`);
 			const cachedValue = cache.get(key);
-			if (maxAgeConfig.refreshOnAccess) {
-				const {throttle} = maxAgeConfig.refreshOnAccess;
-				if (throttle) {
-					const endThrottle = cachedValue.lastRecordedAccess && cachedValue.lastRecordedAccess + throttle;
+			if (maxAgeConfig.updateMaxAge) {
+				if (maxAgeConfig.extensionThrottleMaxAgeUpdate) {
+					const endThrottle = cachedValue.lastRecordedAccess && cachedValue.lastRecordedAccess + maxAgeConfig.extensionThrottleMaxAgeUpdate;
 					const shouldRefreshMaxAge = !endThrottle || endThrottle < Date.now();
 					if (shouldRefreshMaxAge) {
 						debug(`refreshing timer for ${fn.name}:${key}`);
-						const newMaxAge = maxAgeConfig.refreshOnAccess.getMaxAge(key, cachedValue.maxAge);
+						const newMaxAge = maxAgeConfig.updateMaxAge(key, cachedValue.maxAge);
 						cache.set(key, {maxAge: newMaxAge, data: cachedValue.data, lastRecordedAccess: Date.now()});
 					} else {
 						debug(`refreshing timer for ${fn.name}:${key} what throttled (throttle in place until ${endThrottle})`);
 					}
 				} else {
 					debug(`refreshing timer for ${fn.name}:${key}`);
-					const newMaxAge = maxAgeConfig.refreshOnAccess.getMaxAge(key, cachedValue.maxAge);
+					const newMaxAge = maxAgeConfig.updateMaxAge(key, cachedValue.maxAge);
 					cache.set(key, {maxAge: newMaxAge, data: cachedValue.data});
 				}
 			}

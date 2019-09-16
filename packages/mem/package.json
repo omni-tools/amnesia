@@ -44,7 +44,7 @@
 		"p-is-promise": "^3.0.0"
 	},
 	"devDependencies": {
-		"ava": "^2.3.0",
+		"ava": "^2.4.0",
 		"delay": "^4.3.0",
 		"nyc": "^14.1.1",
 		"tsd": "^0.7.4",
