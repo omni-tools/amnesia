@@ -2,7 +2,7 @@
 
 [![Npm Version](https://img.shields.io/npm/v/@omni-tools/mem)](https://www.npmjs.com/package/@omni-tools/mem)
 [![Build Status](https://travis-ci.org/omni-tools/amnesia.svg?branch=master)](https://travis-ci.org/omni-tools/amnesia.svg)
-<!-- TODO: restore [![codecov](https://codecov.io/gh/SamVerschueren/map-age-cleaner/badge.svg?branch=master)](https://codecov.io/gh/SamVerschueren/map-age-cleaner?branch=master)-->
+[![codecov](https://codecov.io/gh/omni-tools/amnesia/badge.svg?branch=master)](https://codecov.io/gh/omni-tools/amnesia?branch=master)
 
 > (_Memory Expirable Memoize_) :floppy_disk:
 
@@ -82,59 +82,59 @@ const memGot = mem(got, {maxAge: 1000});
 
 ## API
 
-> :warning: The Api documentation needs to be updated to document the new optional features!
+### `mem(fn, options?)`
 
-### mem(fn, options?)
+- `fn`: Function to be memoized. (_Type: `Function`_)
+- `options`: Diverses option to customize memoizing behavior (_Type: `object`, default: `{}` _)
+	you'll find bellow the different available options
 
-#### fn
+##### `maxAge`
+Configuration for the `maxAge` configuration mecanism
 
-Type: `Function`
+Originaly just the Milliseconds until the cache expires.
 
-Function to be memoized.
+- _Type:_ (`number`|`function`|`object`)
+- _Default:_ `Infinity`
 
-#### options
+More complex options can be now used, as you can now provide as `maxAge`:
+- a `function`: this one will be injected the `key` and should return the moment(timestamp) at which the item should expire
+- an `object`: this one is necessary to configure the refresh mecanism on acess
+  - `ttl`: the ttl attached to new item. (this is the equivalent for simple _`number`_ `maxAge`)
+  - `expirationDate`: function to compute the expiration data for new item with given `key` (value returned by `cacheKey` function)
+  - `extendOnAccess`: increment to be added to `maxAge` of item being accessed (_Type: `number`_)
+  - `setOnAccess`: Function that will determine the new `maxAge` for the object being accessed. (_Type: `(key:string, currentMaxAge:number) => future_max_age:numver`_)
+  - `extensionThrottle`: throttle the extension of `maxAge` of the object being accessed (_Type: `number|boolean`_)
+	if value is `true`, default throttle value of 1 second will be applied.
+	if some number is given, any access to the item will not cause a `maxAge` extension until the end of this cooldown (in _millisecond_)
 
-Type: `object`
+##### `cacheKey`
+Determines the cache key for storing the result based on the function arguments.
 
-##### maxAge
+- _Type:_ `Function`
 
-Type: `number`<br>
-Default: `Infinity`
-
-Milliseconds until the cache expires.
-
-##### cacheKey
-
-Type: `Function`
-
-Determines the cache key for storing the result based on the function arguments. By default, if there's only one argument and it's a [primitive](https://developer.mozilla.org/en-US/docs/Glossary/Primitive), it's used directly as a key (if it's a `function`, its reference will be used as key), otherwise it's all the function arguments JSON stringified as an array.
+By default, if there's only one argument and it's a [primitive](https://developer.mozilla.org/en-US/docs/Glossary/Primitive), it's used directly as a key (if it's a `function`, its reference will be used as key), otherwise it's all the function arguments JSON stringified as an array.
 
 You could for example change it to only cache on the first argument `x => JSON.stringify(x)`.
 
-##### cache
+##### `cache`
+Specify the cache object to use
 
-Type: `object`<br>
-Default: `new Map()`
+- _Type:_ `object`
+- _Default:_ `new Map()`
 
 Use a different cache storage. Must implement the following methods: `.has(key)`, `.get(key)`, `.set(key, value)`, `.delete(key)`, and optionally `.clear()`. You could for example use a `WeakMap` instead or [`quick-lru`](https://github.com/sindresorhus/quick-lru) for a LRU cache.
 
-##### cachePromiseRejection
-
-Type: `boolean`<br>
-Default: `true`
-
+##### `cachePromiseRejection`
 Cache rejected promises.
+
+- _Type:_ `boolean`
+- _Default:_ `true`
+
 
 ### mem.clear(fn)
 
 Clear all cached data of a memoized function.
-
-#### fn
-
-Type: `Function`
-
-Memoized function.
-
+- `fn` : Some Memoized function.(_Type: `Function`_)
 
 ## Tips
 

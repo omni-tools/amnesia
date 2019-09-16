@@ -2,14 +2,14 @@
 
 [![Npm Version](https://img.shields.io/npm/v/@omni-tools/map-age-cleaner)](https://www.npmjs.com/package/@omni-tools/map-age-cleaner)
 [![Build Status](https://travis-ci.org/omni-tools/amnesia.svg?branch=master)](https://travis-ci.org/omni-tools/amnesia.svg)
-<!-- TODO: restore [![codecov](https://codecov.io/gh/SamVerschueren/map-age-cleaner/badge.svg?branch=master)](https://codecov.io/gh/SamVerschueren/map-age-cleaner?branch=master)-->
+[![codecov](https://codecov.io/gh/omni-tools/amnesia/badge.svg?branch=master)](https://codecov.io/gh/omni-tools/amnesia?branch=master)
 
 > Automatically cleanup expired items in a Map
 
 :loudspeaker: This is a fork of [@SamVerschueren](https://github.com/SamVerschueren) [`map-age-cleaner`](https://github.com/SamVerschueren/map-age-cleaner), to be used for [`@omni-tools/mem`](https://www.npmjs.com/package/@omni-tools/mem)
 
 So far its still kind of experiment, but
-It might end up to be merge :slightly_smiling_face:
+It might end up to be merged :slightly_smiling_face:
 
 ## Install
 
@@ -35,16 +35,17 @@ map.has('unicorn'); //=> true
 map.has('unicorn'); //=> false
 ```
 
-> **Note**: Items have to be ordered ascending based on the expiry property. This means that the item which will be expired first, should be in the first position of the `Map`. _(:thinking: -> probably to kill)_
-
 ## API
 
-### mapAgeCleaner(map, [property])
+### mapAgeCleaner(map, [options={property?,onExpire?}])
 
 Returns the `Map` instance.
 
 - `map`: Map instance which should be cleaned up. (_Type: `Map`_)
-- `property`: Name of the property which olds the expiry timestamp. (_Type: `string`, Default: `maxAge`_)
+- `options`: object containing eventualy the two options possible
+  - `property`: Name of the property which olds the expiry timestamp. (_Type: `string`, Default: `maxAge`_)
+  - `onExpire`: Handler to be called with expired object on expiration. (_Type: `(key, value) => void`, Default: `undefined`_)
+	takes the `key` and `value` of expired item as argument
 
 ## Related
 
